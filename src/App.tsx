@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   BookOpen, 
   Trophy, 
@@ -10,14 +10,10 @@ import {
   CheckCircle, 
   XCircle, 
   Lightbulb,
-  Battery,
-  Zap,
   TestTube,
   FileText,
   BarChart3,
-  AlertTriangle,
-  CheckSquare,
-  Square
+  AlertTriangle
 } from 'lucide-react';
 
 type TestMaterial = {
