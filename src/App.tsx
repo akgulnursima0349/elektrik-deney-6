@@ -3,17 +3,13 @@ import {
   BookOpen, 
   Trophy, 
   Target, 
-  Shield, 
   Settings, 
-  Play, 
   RotateCcw, 
   CheckCircle, 
   XCircle, 
   Lightbulb,
   TestTube,
-  FileText,
-  BarChart3,
-  AlertTriangle
+  BarChart3
 } from 'lucide-react';
 
 type TestMaterial = {
@@ -32,7 +28,7 @@ type TestResult = {
   notes?: string;
 };
 
-type Phase = 'theory' | 'materials' | 'safety' | 'variables' | 'preparation' | 'procedure' | 'testing' | 'results' | 'analysis' | 'conclusion';
+type Phase = 'theory' | 'setup' | 'experiment' | 'analysis' | 'evaluation';
 
 const testMaterials: TestMaterial[] = [
   {
@@ -104,22 +100,18 @@ const testMaterials: TestMaterial[] = [
 function App() {
   const [currentPhase, setCurrentPhase] = useState<Phase>('theory');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
-  const [currentTestIndex, setCurrentTestIndex] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
   const [bulbLit, setBulbLit] = useState(false);
   const [circuitConnected, setCircuitConnected] = useState(false);
+  const [switchOn, setSwitchOn] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
 
   const phases: { id: Phase; title: string; icon: React.ReactNode }[] = [
-    { id: 'theory', title: 'Kazanım ve Amaç', icon: <BookOpen className="w-5 h-5" /> },
-    { id: 'materials', title: 'Malzemeler', icon: <Settings className="w-5 h-5" /> },
-    { id: 'safety', title: 'Güvenlik', icon: <Shield className="w-5 h-5" /> },
-    { id: 'variables', title: 'Değişkenler', icon: <Target className="w-5 h-5" /> },
-    { id: 'preparation', title: 'Hazırlık', icon: <Settings className="w-5 h-5" /> },
-    { id: 'procedure', title: 'Prosedür', icon: <Play className="w-5 h-5" /> },
-    { id: 'testing', title: 'Deney', icon: <TestTube className="w-5 h-5" /> },
-    { id: 'results', title: 'Sonuçlar', icon: <FileText className="w-5 h-5" /> },
+    { id: 'theory', title: 'Öğrenim Çıktısı ve Amaç', icon: <BookOpen className="w-5 h-5" /> },
+    { id: 'setup', title: 'Deney Düzeneği', icon: <Settings className="w-5 h-5" /> },
+    { id: 'experiment', title: 'Deney', icon: <TestTube className="w-5 h-5" /> },
     { id: 'analysis', title: 'Analiz', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'conclusion', title: 'Sonuç', icon: <CheckCircle className="w-5 h-5" /> }
+    { id: 'evaluation', title: 'Değerlendirme', icon: <CheckCircle className="w-5 h-5" /> }
   ];
 
   const nextPhase = useCallback(() => {
@@ -140,6 +132,7 @@ function App() {
     const material = testMaterials.find(m => m.id === materialId);
     if (!material) return;
 
+    setSelectedMaterial(materialId);
     setIsTesting(true);
     setCircuitConnected(true);
     
@@ -147,23 +140,24 @@ function App() {
     setTimeout(() => {
       const result: TestResult = {
         materialId,
-        bulbLit: material.isConductor,
+        bulbLit: material.isConductor && switchOn,
         result: material.isConductor ? 'İletken' : 'Yalıtkan',
         notes: material.isConductor ? 'Lamba yandı' : 'Lamba yanmadı'
       };
       
       setTestResults(prev => [...prev.filter(r => r.materialId !== materialId), result]);
-      setBulbLit(material.isConductor);
+      setBulbLit(material.isConductor && switchOn);
       setIsTesting(false);
     }, 2000);
-  }, []);
+  }, [switchOn]);
 
   const resetTest = useCallback(() => {
     setTestResults([]);
-    setCurrentTestIndex(0);
     setBulbLit(false);
     setCircuitConnected(false);
     setIsTesting(false);
+    setSwitchOn(false);
+    setSelectedMaterial(null);
   }, []);
 
   const TheoryPhase = () => (
@@ -171,13 +165,13 @@ function App() {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border">
         <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
           <BookOpen className="w-6 h-6" />
-          Kazanım ve Amaç
+          Öğrenim Çıktısı ve Amaç
         </h2>
         
         <div className="bg-white p-4 rounded-lg border border-blue-200">
           <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
             <Trophy className="w-5 h-5" />
-            Öğrenme Çıktısı
+            Öğrenim Çıktısı
           </h3>
           <p className="text-gray-700 mb-4">
             Basit bir elektrik devresi kullanarak farklı maddelerin iletken mi yoksa yalıtkan mı olduğunu deneyle gözlemler ve sınıflandırır.
@@ -197,12 +191,12 @@ function App() {
     </div>
   );
 
-  const MaterialsPhase = () => (
+  const SetupPhase = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border">
         <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-2">
           <Settings className="w-6 h-6" />
-          Malzemeler
+          Deney Düzeneği
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,184 +224,100 @@ function App() {
             </ul>
           </div>
         </div>
-      </div>
-    </div>
-  );
-
-  const SafetyPhase = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-red-50 to-pink-50 p-6 rounded-xl border">
-        <h2 className="text-2xl font-bold text-red-800 mb-4 flex items-center gap-2">
-          <Shield className="w-6 h-6" />
-          Güvenlik, Düzen ve Etik
-        </h2>
         
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg border border-red-200">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-red-800 mb-2">Güvenlik Kuralları</h3>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>• Pil uçlarını kısa devre yapmayın</li>
-                  <li>• Sıvı çözeltileri kullanırken kabloları ıslatmayın</li>
-                  <li>• Suya batırırken sadece uç kısımları temas ettirin</li>
-                  <li>• Deney bitince pilleri ayırın</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        <div className="mt-6 bg-white p-4 rounded-lg border border-green-200">
+          <h3 className="font-semibold text-green-800 mb-3">Güvenlik Kuralları</h3>
+          <ul className="space-y-1 text-sm text-gray-700">
+            <li>• Pil uçlarını kısa devre yapmayın</li>
+            <li>• Sıvı çözeltileri kullanırken kabloları ıslatmayın</li>
+            <li>• Suya batırırken sadece uç kısımları temas ettirin</li>
+            <li>• Deney bitince pilleri ayırın</li>
+          </ul>
         </div>
       </div>
     </div>
   );
 
-  const VariablesPhase = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border">
-        <h2 className="text-2xl font-bold text-purple-800 mb-4 flex items-center gap-2">
-          <Target className="w-6 h-6" />
-          Değişkenler
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-purple-200">
-            <h3 className="font-semibold text-purple-800 mb-2">Bağımsız Değişken</h3>
-            <p className="text-sm text-gray-700">Madde türü</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-purple-200">
-            <h3 className="font-semibold text-purple-800 mb-2">Bağımlı Değişken</h3>
-            <p className="text-sm text-gray-700">Lambanın yanma durumu</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-purple-200">
-            <h3 className="font-semibold text-purple-800 mb-2">Kontrol Değişkenleri</h3>
-            <p className="text-sm text-gray-700">Pil türü, lamba türü, kablo sayısı, süre</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
-  const PreparationPhase = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-xl border">
-        <h2 className="text-2xl font-bold text-yellow-800 mb-4 flex items-center gap-2">
-          <Settings className="w-6 h-6" />
-          Hazırlık
-        </h2>
-        
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg border border-yellow-200">
-            <h3 className="font-semibold text-yellow-800 mb-3">Hazırlık Adımları</h3>
-            <ol className="space-y-2 text-sm text-gray-700">
-              <li className="flex items-start gap-2">
-                <span className="bg-yellow-200 text-yellow-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">1</span>
-                <span>Pil + lamba + kablo ile devreyi kurup çalıştığını doğrulayın</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="bg-yellow-200 text-yellow-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">2</span>
-                <span>İki uç arasına test edilecek maddeyi koyarak devreyi tamamlayın</span>
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const ProcedurePhase = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-6 rounded-xl border">
-        <h2 className="text-2xl font-bold text-indigo-800 mb-4 flex items-center gap-2">
-          <Play className="w-6 h-6" />
-          Prosedür
-        </h2>
-        
-        <div className="bg-white p-4 rounded-lg border border-indigo-200">
-          <h3 className="font-semibold text-indigo-800 mb-3">Deney Adımları</h3>
-          <ol className="space-y-2 text-sm text-gray-700">
-            <li className="flex items-start gap-2">
-              <span className="bg-indigo-200 text-indigo-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">1</span>
-              <span>Alüminyum folyoyu uçlara bağlayın, lambayı gözlemleyin</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="bg-indigo-200 text-indigo-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">2</span>
-              <span>Aynı işlemi sırasıyla kumaş, gümüş tel, bakır tel, plastik, madeni para, tuzlu su, şekerli su için uygulayın</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="bg-indigo-200 text-indigo-800 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">3</span>
-              <span>Her gözlemi tabloya kaydedin</span>
-            </li>
-          </ol>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CircuitVisualization = ({ materialId }: { materialId?: string }) => {
-    const material = materialId ? testMaterials.find(m => m.id === materialId) : null;
-    const isConnected = circuitConnected && materialId;
-    const bulbOn = bulbLit && isConnected;
+  const CircuitVisualization = () => {
+    const material = selectedMaterial ? testMaterials.find(m => m.id === selectedMaterial) : null;
+    const isConnected = circuitConnected && selectedMaterial;
+    const bulbOn = bulbLit && isConnected && switchOn;
 
     return (
       <div className="bg-gray-100 p-6 rounded-lg border-2 border-gray-300">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Elektrik Devresi</h3>
         
-        <div className="flex items-center justify-center space-x-8">
-          {/* Battery */}
-          <div className="flex flex-col items-center">
-            <div className="w-12 h-8 bg-gray-800 rounded border-2 border-gray-600 flex items-center justify-center">
-              <div className="w-2 h-4 bg-red-500 rounded-sm"></div>
-              <div className="w-2 h-4 bg-gray-300 rounded-sm ml-1"></div>
-            </div>
-            <span className="text-xs text-gray-600 mt-1">1.5V Pil</span>
-          </div>
-
-          {/* Wire 1 */}
-          <div className={`w-16 h-1 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-
-          {/* Test Material */}
-          <div className="flex flex-col items-center">
-            <div className={`w-16 h-12 border-2 rounded-lg flex items-center justify-center ${
-              material ? (material.isConductor ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50') : 'border-gray-400 bg-gray-50'
-            }`}>
-              <span className="text-2xl">{material?.icon || '❓'}</span>
-            </div>
-            <span className="text-xs text-gray-600 mt-1 text-center max-w-16">
+        {/* Circuit Diagram */}
+        <div className="relative bg-white p-8 rounded-lg border border-gray-200 mb-4">
+          <svg viewBox="0 0 400 200" className="w-full h-48">
+            {/* Battery */}
+            <rect x="20" y="80" width="30" height="40" fill="#374151" stroke="#4B5563" strokeWidth="2" rx="4"/>
+            <rect x="25" y="85" width="8" height="15" fill="#EF4444" rx="1"/>
+            <rect x="35" y="85" width="8" height="15" fill="#D1D5DB" rx="1"/>
+            <text x="35" y="140" textAnchor="middle" className="text-xs fill-gray-600">1.5V Pil</text>
+            
+            {/* Wire 1 */}
+            <line x1="50" y1="100" x2="120" y2="100" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            
+            {/* Test Material */}
+            <rect x="120" y="80" width="60" height="40" 
+                  fill={material ? (material.isConductor ? "#DCFCE7" : "#FEE2E2") : "#F3F4F6"}
+                  stroke={material ? (material.isConductor ? "#10B981" : "#EF4444") : "#9CA3AF"} 
+                  strokeWidth="2" rx="4"/>
+            <text x="150" y="105" textAnchor="middle" className="text-lg">
+              {material?.icon || '❓'}
+            </text>
+            <text x="150" y="140" textAnchor="middle" className="text-xs fill-gray-600">
               {material?.name || 'Test Maddesi'}
-            </span>
-          </div>
-
-          {/* Wire 2 */}
-          <div className={`w-16 h-1 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-
-          {/* Bulb */}
-          <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-              bulbOn ? 'border-yellow-400 bg-yellow-100' : 'border-gray-400 bg-gray-100'
-            }`}>
-              <Lightbulb className={`w-5 h-5 ${bulbOn ? 'text-yellow-500' : 'text-gray-400'}`} />
-            </div>
-            <span className="text-xs text-gray-600 mt-1">Ampul</span>
-          </div>
-
-          {/* Wire 3 */}
-          <div className={`w-16 h-1 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-
-          {/* Switch */}
-          <div className="flex flex-col items-center">
-            <div className={`w-6 h-6 border-2 rounded flex items-center justify-center ${
-              isConnected ? 'border-green-500 bg-green-100' : 'border-gray-400 bg-gray-100'
-            }`}>
-              <div className={`w-3 h-3 rounded-sm ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-            </div>
-            <span className="text-xs text-gray-600 mt-1">Anahtar</span>
-          </div>
+            </text>
+            
+            {/* Wire 2 */}
+            <line x1="180" y1="100" x2="250" y2="100" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            
+            {/* Bulb */}
+            <circle cx="250" cy="100" r="15" 
+                    fill={bulbOn ? "#FEF3C7" : "#F3F4F6"}
+                    stroke={bulbOn ? "#F59E0B" : "#9CA3AF"} 
+                    strokeWidth="2"/>
+            <text x="250" y="130" textAnchor="middle" className="text-xs fill-gray-600">Ampul</text>
+            
+            {/* Wire 3 */}
+            <line x1="265" y1="100" x2="320" y2="100" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            
+            {/* Switch */}
+            <rect x="320" y="90" width="20" height="20" 
+                  fill={switchOn ? "#DCFCE7" : "#F3F4F6"}
+                  stroke={switchOn ? "#10B981" : "#9CA3AF"} 
+                  strokeWidth="2" rx="2"/>
+            <circle cx={switchOn ? "335" : "325"} cy="100" r="3" 
+                    fill={switchOn ? "#10B981" : "#9CA3AF"}/>
+            <text x="330" y="130" textAnchor="middle" className="text-xs fill-gray-600">Anahtar</text>
+            
+            {/* Return wire */}
+            <line x1="340" y1="100" x2="380" y2="100" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            <line x1="380" y1="100" x2="380" y2="120" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            <line x1="380" y1="120" x2="20" y2="120" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+            <line x1="20" y1="120" x2="20" y2="100" stroke={isConnected ? "#10B981" : "#9CA3AF"} strokeWidth="3"/>
+          </svg>
         </div>
 
-        <div className="mt-4 text-center">
+        {/* Controls */}
+        <div className="flex justify-center gap-4 mb-4">
+          <button
+            onClick={() => setSwitchOn(!switchOn)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              switchOn 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+            }`}
+          >
+            Anahtar {switchOn ? 'Açık' : 'Kapalı'}
+          </button>
+        </div>
+
+        {/* Status */}
+        <div className="text-center">
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
             bulbOn ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
           }`}>
@@ -421,7 +331,7 @@ function App() {
     );
   };
 
-  const TestingPhase = () => (
+  const ExperimentPhase = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border">
         <h2 className="text-2xl font-bold text-emerald-800 mb-4 flex items-center gap-2">
@@ -430,14 +340,14 @@ function App() {
         </h2>
         
         <div className="mb-6">
-          <CircuitVisualization materialId={testResults[currentTestIndex]?.materialId} />
+          <CircuitVisualization />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {testMaterials.map((material) => {
             const result = testResults.find(r => r.materialId === material.id);
             const isTested = !!result;
-            const isCurrent = currentTestIndex < testMaterials.length && testMaterials[currentTestIndex].id === material.id;
+            const isCurrent = selectedMaterial === material.id;
             
             return (
               <div
@@ -488,15 +398,18 @@ function App() {
     </div>
   );
 
-  const ResultsPhase = () => (
+  const EvaluationPhase = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border">
         <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
-          <FileText className="w-6 h-6" />
-          Kayıt Tablosu
+          <CheckCircle className="w-6 h-6" />
+          Değerlendirme
         </h2>
         
-        <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-3">Kayıt Tablosu</h3>
+          
+          <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
           <table className="w-full">
             <thead className="bg-blue-50">
               <tr>
@@ -549,6 +462,23 @@ function App() {
               })}
             </tbody>
           </table>
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-blue-800 mb-3">Temel Kavramlar</h3>
+          <div className="bg-white p-4 rounded-lg border border-blue-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-green-800 mb-2">İletken Maddeler</h4>
+                <p className="text-sm text-gray-700">Elektriği ileten maddeler. Metaller ve tuzlu su gibi iyon içeren çözeltiler iletkendir.</p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-red-800 mb-2">Yalıtkan Maddeler</h4>
+                <p className="text-sm text-gray-700">Elektriği iletmeyen maddeler. Plastik, kumaş ve şekerli su gibi maddeler yalıtkandır.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -616,50 +546,14 @@ function App() {
     );
   };
 
-  const ConclusionPhase = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border">
-        <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center gap-2">
-          <CheckCircle className="w-6 h-6" />
-          Sonuç
-        </h2>
-        
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-lg border border-green-200">
-            <h3 className="font-semibold text-green-800 mb-3">Deney Sonucu</h3>
-            <p className="text-gray-700 mb-4">
-              Metaller ve tuzlu su gibi iyon içeren çözeltiler elektriği iletirken; 
-              kumaş, plastik ve şekerli su elektriği iletmemiştir. 
-              Böylece maddeler elektriği iletme durumlarına göre iletkenler ve 
-              yalıtkanlar olarak sınıflandırılmıştır.
-            </p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg border border-green-200">
-            <h3 className="font-semibold text-green-800 mb-3">Hata Kaynakları ve İyileştirme</h3>
-            <ul className="space-y-1 text-sm text-gray-700">
-              <li>• Sıvılarda kablonun iyi temas etmemesi</li>
-              <li>• Madeni paranın yüzeyinde kir/oksit bulunması</li>
-              <li>• Pillerin zayıf olması</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderCurrentPhase = () => {
     switch (currentPhase) {
       case 'theory': return <TheoryPhase />;
-      case 'materials': return <MaterialsPhase />;
-      case 'safety': return <SafetyPhase />;
-      case 'variables': return <VariablesPhase />;
-      case 'preparation': return <PreparationPhase />;
-      case 'procedure': return <ProcedurePhase />;
-      case 'testing': return <TestingPhase />;
-      case 'results': return <ResultsPhase />;
+      case 'setup': return <SetupPhase />;
+      case 'experiment': return <ExperimentPhase />;
       case 'analysis': return <AnalysisPhase />;
-      case 'conclusion': return <ConclusionPhase />;
+      case 'evaluation': return <EvaluationPhase />;
       default: return <TheoryPhase />;
     }
   };
